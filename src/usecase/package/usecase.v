@@ -43,6 +43,7 @@ pub fn (u UseCase) create(name string, vcsUrl string, description string, user e
 	log.info().add('url', name).msg('create package')
 
 	vcs_name := check_vcs(url, user.username) or { return err }
+	check_vcs_exists(url) or { return err }
 
 	resp := http.get(url) or { return error('Failed to fetch package URL') }
 	if resp.status_code == 404 {
@@ -124,6 +125,14 @@ fn check_vcs(url string, username string) !string {
 	}
 
 	return error('unsupported vcs')
+}
+
+fn check_vcs_exists(url string) ! {
+	result := http.head(url.all_before('.git')) or { return error('Failed to fetch package URL') }
+
+	if result.status_code != 200 {
+		return error('This package URL does not exist (404)')
+	}
 }
 
 fn is_valid_mod_name(s string) bool {
